@@ -192,10 +192,10 @@ function [coeffs_winner,fit,fun_text,modelFun_winner] = get_fit(x,y,display_fun,
 %         coeffs_winner(1) = coeffs_winner(1)*y_norm/x_norm; % add the normalization factor back in
 %         coeffs_winner(4) = coeffs_winner(4)*y_norm; % add the normalization factor back in
 % %         coeffs_winner(3) = coeffs_winner(3)/x_norm;
-        fun_text=[names{3} ' = ' num2str(y_norm) '*(' num2str(coeffs_winner(1)) '/( 1 + exp(-' num2str(coeffs_winner(2)) '*('   names{2} '/' num2str(x_norm) ' - ' num2str(coeffs_winner(3))   '))) + ' num2str(coeffs_winner(4)) ')'];
+        fun_text=[names{3} ' = ' num2str(y_norm) '*(' num2str(coeffs_winner(1)) '/( 1 + exp(-' num2str(coeffs_winner(2)) '*('   names{2} ' - ' num2str(coeffs_winner(3))   ')/' num2str(x_norm) ')) + ' num2str(coeffs_winner(4)) ')'];
         coeffs_winner(1) = coeffs_winner(1)*y_norm; % add the normalization factor back in
-%         coeffs_winner(2) = coeffs_winner(2)/x_norm; % add the normalization factor back in
-        coeffs_winner(3) = coeffs_winner(3)/x_norm; % add the normalization factor back in
+        coeffs_winner(2) = coeffs_winner(2)/x_norm; % add the normalization factor back in
+        coeffs_winner(3) = coeffs_winner(3)*x_norm; % add the normalization factor back in
         coeffs_winner(4) = coeffs_winner(4)*y_norm; % add the normalization factor back in
         
     else

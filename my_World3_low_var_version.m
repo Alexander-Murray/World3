@@ -87,7 +87,7 @@ disp('Reading data...')
 raw_data = readtable('Estimation/my_World3_data.csv');
 
 est_start = 201; %201
-est_end = 210;%488; %301
+est_end = 488; %301
 H = 25; % forecast horizon
 
 dt=0.5;
@@ -708,7 +708,7 @@ param_settings.init_param_guess.diopc_param2 = 1.05;
 param_settings.upper_bound.diopc_param2 = 5;
 
 param_settings.lower_bound.resource_use_factor_1 = 0;
-param_settings.init_param_guess.resource_use_factor_1 = 0.61;
+param_settings.init_param_guess.resource_use_factor_1 = 1;%0.61;
 param_settings.upper_bound.resource_use_factor_1 = 5;
 
 param_settings.lower_bound.ppar_param1 = -5;
@@ -724,15 +724,15 @@ param_settings.init_param_guess.ppar_param3 = (0.5*3*(1+3*12)/20);
 param_settings.upper_bound.ppar_param3 = 5;
 
 param_settings.lower_bound.persistent_pollution_generation_factor_1 = 0;
-param_settings.init_param_guess.persistent_pollution_generation_factor_1 = 1.017;
+param_settings.init_param_guess.persistent_pollution_generation_factor_1 = 1;%1.017;
 param_settings.upper_bound.persistent_pollution_generation_factor_1 = 5;
 
 param_settings.lower_bound.land_yield_factor_1 = 0;
-param_settings.init_param_guess.land_yield_factor_1 = 1.86;
+param_settings.init_param_guess.land_yield_factor_1 = 1;%1.86;
 param_settings.upper_bound.land_yield_factor_1 = 5;
 
 param_settings.lower_bound.service_capital_output_ratio_1 = 0;
-param_settings.init_param_guess.service_capital_output_ratio_1 = 0.56;
+param_settings.init_param_guess.service_capital_output_ratio_1 = 1;%0.56;
 param_settings.upper_bound.service_capital_output_ratio_1 = 5;
 
 param_settings.lower_bound.inflation_param1 = -10;
@@ -1341,6 +1341,13 @@ lgd.Location = "bestoutside";
 xticks(1:10/dt:T)
 xticklabels(raw_data.Date(est_start:2*10/dt:est_end))
 hold off
+
+%% Model simulation analysis
+for t = 1:T
+    for var = 1:n_var
+        eq_eval{t}.(var_names{var}) = sim_traj(var,t);
+    end
+end
 
 
 %% estimate model

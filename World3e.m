@@ -985,8 +985,8 @@ fertility_control_facilities_per_capita = fertility_control_facilities_per_capit
     fraction_of_industrial_capital_alloc_to_obtaining_res(t)=fraction_of_capital_allocated_to_obtaining_resources_2(t)/(1+exp(-40*(t-shift_fraction_of_industrial_capital_for_obtaining_resources)))-fraction_of_capital_allocated_to_obtaining_resources_1(t)/(1+exp(-40*(t-shift_fraction_of_industrial_capital_for_obtaining_resources)))+fraction_of_capital_allocated_to_obtaining_resources_1(t);
     if t>1
         industrial_output(t)=(((Industrial_Capital(t)))*(1-fraction_of_industrial_capital_alloc_to_obtaining_res(t)))*(capacity_utilization_fraction(t))/industrial_capital_output_ratio(t);
-    else
-        industrial_output(1)=66500000000;
+%     else
+%         industrial_output(1)=66500000000;
     end
     industrial_output_2005_value(t)=industrial_output(t)*w3_real_exhange_rate;
     industrial_output_per_capita(t)=industrial_output(t)/population(t);
@@ -1018,13 +1018,13 @@ fertility_control_facilities_per_capita = fertility_control_facilities_per_capit
 	land_yield_multiplier_from_air_pollution(t)=land_yield_multiplier_from_air_pollution_2(t)/(1+exp(-40*(t-shift_land_yield_multiplier_from_air_pollution)))-land_yield_multipler_from_air_pollution_1(t)/(1+exp(-40*(t-shift_land_yield_multiplier_from_air_pollution)))+land_yield_multipler_from_air_pollution_1(t);
     if t>1
         fraction_of_agricultural_inputs_for_land_maintenance(t)=fraction_of_agricultural_inputs_for_land_maintenance_table(Perceived_Food_Ratio(t));
-    else
-        fraction_of_agricultural_inputs_for_land_maintenance(t)=0.04;
+%     else
+%         fraction_of_agricultural_inputs_for_land_maintenance(t)=0.04;
     end  
     if t>1
         agricultural_input_per_hectare(t)=Agricultural_Inputs(t)*(1-fraction_of_agricultural_inputs_for_land_maintenance(t))/Arable_Land(t);
-    else
-        agricultural_input_per_hectare(t)=16/3;
+%     else
+%         agricultural_input_per_hectare(t)=16/3;
     end
     land_yield_multiplier_from_capital(t)=land_yield_multiplier_from_capital_table(agricultural_input_per_hectare(t)/unit_agricultural_input);
     land_yield(t)=land_yield_multiplier_from_technology(t)*Land_Fertility(t)*land_yield_multiplier_from_capital(t)*land_yield_multiplier_from_air_pollution(t); % land yield should be function of potentially arable land (most efficient land developed first)!
