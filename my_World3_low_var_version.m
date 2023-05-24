@@ -614,6 +614,10 @@ for p = 1:n_params
    eval(['params(p) =  ' char(param_names(p)) ';']);
 end
 
+%%% TO DO: get proper initial guesses for:
+% fcfpc_param
+% inherent_land_fertility
+
 %%% TO DO: put this in a separate file and then load it
 param_settings.lower_bound.maximum_total_fertility_normal = 2;
 param_settings.init_param_guess.maximum_total_fertility_normal = 12;
@@ -621,7 +625,7 @@ param_settings.upper_bound.maximum_total_fertility_normal = 20;
 
 param_settings.lower_bound.desired_completed_family_size_normal = 1;
 param_settings.init_param_guess.desired_completed_family_size_normal = 4;
-param_settings.upper_bound.desired_completed_family_size_normal = 10;
+param_settings.upper_bound.desired_completed_family_size_normal = 8;
 
 param_settings.lower_bound.land_fraction_harvested = 0.4;
 param_settings.init_param_guess.land_fraction_harvested = 0.7;
@@ -645,7 +649,7 @@ param_settings.upper_bound.inv_desired_persistent_pollution_index = 1;
 
 param_settings.lower_bound.inv_social_discount = 1;
 param_settings.init_param_guess.inv_social_discount = 1/0.07;
-param_settings.upper_bound.inv_social_discount = 100;
+param_settings.upper_bound.inv_social_discount = 50;
 
 param_settings.lower_bound.industrial_capital_output_ratio_1 = 1;
 param_settings.init_param_guess.industrial_capital_output_ratio_1 = 3;
@@ -804,10 +808,10 @@ shift_all = T+1;
 shift_fraction_of_industrial_output_allocated_to_agriculture=shift_all;
 shift_indicated_food_per_capita=shift_all;
 shift_average_life_agricultural_inputs=shift_all;
-shift_resource_technology_change_rate=150;%shift_all;
+shift_resource_technology_change_rate=max(0,(301-est_start)*dt);%shift_all;
 shift_fraction_of_industrial_capital_for_obtaining_resources=shift_all;
 shift_resource_use_factor=shift_all;
-shift_lifetime_multiplier_from_health_services=80;
+shift_lifetime_multiplier_from_health_services=max(0,(161-est_start)*dt);
 shift_fertility_control_effectiveness=T*10;%shift_all;
 shift_births=T*10;%shift_all;
 shift_desired_completed_family_size=T*10;%shift_all;
@@ -1145,8 +1149,8 @@ for t = 1:T
         %	eq{t}	[eq{t};...
 %         delayed_industrial_output_per_capita{t}=delayed_industrial_output_per_capita_shk(t)+((delayed_industrial_output_per_capita_init)/2);...
 %         average_industrial_output_per_capita{t}=average_industrial_output_per_capita_shk(t)+(average_industrial_output_per_capita_init+dt*(industrial_output_per_capita_init-average_industrial_output_per_capita_init)/income_expectation_averaging_time);...
-        delayed_industrial_output_per_capita{t}=delayed_industrial_output_per_capita_shk(t)+delayed_industrial_output_per_capita_init;...
-        average_industrial_output_per_capita{t}=average_industrial_output_per_capita_shk(t)+average_industrial_output_per_capita_init;
+        delayed_industrial_output_per_capita{t}=delayed_industrial_output_per_capita_shk(t)+industrial_output_per_capita{1};...
+        average_industrial_output_per_capita{t}=average_industrial_output_per_capita_shk(t)+industrial_output_per_capita{1};
 %	];
     end
 
@@ -1241,17 +1245,18 @@ for t = 1:T
 % 	fraction_of_output_in_industry(t)=industrial_output(t)/(PRICE_OF_FOOD*food(t)+service_output(t)+industrial_output(t));
 % 	fraction_of_output_in_services(t)=service_output(t)/(PRICE_OF_FOOD*food(t)+service_output(t)+industrial_output(t));
 
-    % all variables > 0
+    % inequality constraints
+        % all variables > 0
     for v = 1:n_var %%%TO DO: this in a less hard-coded way
         if v == 65 %crowding_multiplier_from_industry
             eval(['ineq2eq{t} = [ineq2eq{t};-0.2-' var_names{v} '{t}];']);
         elseif v==n_var %inflation
             % nothing
         else
-            eval(['ineq2eq{t} = [ineq2eq{t};0.00001-' var_names{v} '{t}];']);
+            eval(['ineq2eq{t} = [ineq2eq{t};0-' var_names{v} '{t}];']);
         end
     end
-    ineq2eq{t} = [...
+    ineq2eq{t} = [ineq2eq{t};...
     fraction_of_industrial_output_alloc_to_consumption_const{t}-1;...
     fraction_of_industrial_output_alloc_to_consumption_var{t}-1;...
     fraction_of_industrial_capital_alloc_to_obtaining_res{t}-1;...
@@ -1274,6 +1279,7 @@ for t = 1:T
     crowding_multiplier_from_industry{t}-1;...
     fertility_control_effectiveness{t}-1;...
     ];
+
 end
 
 
