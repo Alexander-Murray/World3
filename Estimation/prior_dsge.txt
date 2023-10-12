@@ -1,0 +1,47 @@
+% /********************************************************************
+% **   Notes:
+% ** 
+% **
+% **   Each row has the following specification:
+% **
+% **      pdf,arg1,arg2,              mask,fix;
+% **      pdf shape of prior density
+% **                  1: BETA(mean,stdd)
+% **                  2: GAMMA(mean,stdd)
+% **                  3: NORMAL(mean,stdd)
+% **                  4: INVGAMMA(s^2,nu)
+% **                  5: UNIFORM(a,b)
+% **                  0: no prior
+% **      arg1    1st argument for pdf
+% **      arg2    2nd argument for pdf
+% **
+% **      mask    1 if the parameter is fixed to constant
+% **      fix     fixed parameter value (0 if mask=0)
+% ********************************************************************/
+% /* Recover pure parameters */
+1, 0.7, 0.15, 0, 0              %h
+1, 0.66, 0.05, 0, 0             %xip
+3, 1.5, 0.3, 0, 0               %psipi
+3, 0.12, 0.05, 1, 0             %psiy
+3, 0.12, 0.05, 0, 0             %psidy
+1, 0.5, 0.2, 0, 0               %psir_1
+3, 0, 0.25, 1, 0                %psir_2
+3, 0.40, 0.10, 0, 0             %abar
+3, 0.9, 0.10, 0, 0             %pibar
+3, 1.5, 0.25, 0, 0              %rbar
+1, 0.5, 0.2, 0, 0               %rhou
+1, 0.5, 0.2, 0, 0               %rhoa
+1, 0.5, 0.2, 0, 0               %rhor
+4, 0.1, 2, 0, 0                 %sigma_b
+4, 0.1, 2, 0, 0                 %sigma_z
+4, 0.1, 2, 0, 0                 %sigma_i
+4, 0.1, 2, 0 , 0                %sigma_s
+5, 0.5, 1.5 , 0, 0              %alphaBN
+5, -1, 1, 0, 0                  %rho_bs
+5, -1, 1, 0, 0                  %rho_zs
+5, -1, 1, 0, 0                  %rho_is
+1, 0.97, 0.025, 1, 0.99            %rhopi
+4, 0.01, 2, 0, 0                %sigma_pi
+5, -1, 1, 0, 0                  %rho_ps
+
+

@@ -1,0 +1,50 @@
+% /********************************************************************
+% **   Notes:
+% ** 
+% **
+% **   Each row has the lower bound and upper bound of each parameter
+% ********************************************************************/
+% /* Recover pure parameters */
+-0.1, 0.1 %immigration_rate = 0.01; 
+-0.1, 0.1 %pop_growth_rate = 0.005;
+0, 10 %ind_productivity = 1;
+0, 100 %agr_productivity = 18;
+0, 1 %healthcare_efficiency = 0.01;
+0, 0.5 %ind_growth_per_pop = 0.01;
+0, 1 %res_per_ind = 0.02;
+0, 0.1 %tech_decay_rate = 0.01;
+0, 0.1 %ind_decay_rate = 0.02;
+0, 0.1 %agr_decay_rate = 0.04;
+0, 1 %food_decay_rate = 0.1;
+0, 0.5 %ind_pollution_factor = 0.01;
+0, 0.5 %agr_pollution_factor = 0.005;
+0, 1 %pop_starve_rate = 0.5;
+0, 10 %constant_tech_need = 1;
+0, 1 %agr_prod_from_tech = 0.1;
+0, 1 %ind_prod_from_tech = 0.1;
+0, 1 %hc_eff_from_tech = 0.001;
+0, 1 %res_scarcity_factor = para(19);
+0, 1 %ind_output_PP_factor;
+0, 1 %sigma_pop;
+0, 1 %sigma_agr_need;
+0, 1 %sigma_ind_need;
+0, 1 %sigma_serve_need;
+0, 1 %sigma_ind_output;
+0, 1 %sigma_agr_output;
+0, 1 %sigma_infl;
+0, 1 %sigma_res;
+0, 1 %sigma_food;
+0, 1 %sigma_tech;
+0, 1 %sigma_agr_eff;
+0, 1 %sigma_ind;
+0, 1 %sigma_agr;
+0, 200 %pop_init;
+0, 200 %tech_init;
+0, 10 %tech_infra_init;
+0, 10 %ind_init;
+0, 10 %agr_init;
+0, 200 %food_init;
+0, 100 %env_init;
+0, 2000 %res_init;
+
+

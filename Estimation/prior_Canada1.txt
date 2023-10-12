@@ -1,0 +1,63 @@
+% /********************************************************************
+% **   Notes:
+% ** 
+% **
+% **   Each row has the following specification:
+% **
+% **      pdf,arg1,arg2,              mask,fix;
+% **      pdf shape of prior density
+% **                  1: BETA(mean,stdd)
+% **                  2: GAMMA(mean,stdd)
+% **                  3: NORMAL(mean,stdd)
+% **                  4: INVGAMMA(s^2,nu)
+% **                  5: UNIFORM(a,b)
+% **                  0: no prior
+% **      arg1    1st argument for pdf
+% **      arg2    2nd argument for pdf
+% **
+% **      mask    1 if the parameter is fixed to constant
+% **      fix     fixed parameter value (0 if mask=0)
+% ********************************************************************/
+% /* Recover pure parameters */
+3, 0.01, 0.001, 0, 0 %immigration_rate = 0.01; 
+3, 0.005, 0.001, 0, 0 %pop_growth_rate = 0.005;
+3, 1, 0.1, 0, 0 %ind_productivity = 1;
+3, 18, 1.8, 0, 0 %agr_productivity = 18;
+3, 0.01, 0.001, 0, 0 %healthcare_efficiency = 0.01;
+3, 0.01, 0.1, 0, 0 %ind_growth_per_pop = 0.01;
+3, 0.02, 0.002, 0, 0 %res_per_ind = 0.02;
+3, 0.01, 0.001, 0, 0 %tech_decay_rate = 0.01;
+3, 0.02, 0.002, 0, 0 %ind_decay_rate = 0.02;
+3, 0.04, 0.004, 0, 0 %agr_decay_rate = 0.04;
+3, 0.1, 0.01, 0, 0 %food_decay_rate = 0.1;
+3, 0.01, 0.001, 0, 0 %ind_pollution_factor = 0.01;
+3, 0.005, 0.001, 0, 0 %agr_pollution_factor = 0.005;
+3, 0.5, 0.5, 0, 0 %pop_starve_rate = 0.5;
+5, 1, 0.1, 1, 0 %constant_tech_need = 1;
+3, 0.1, 0.01, 0, 0 %agr_prod_from_tech = 0.1;
+3, 0.1, 0.01, 0, 0 %ind_prod_from_tech = 0.1;
+3, 0.001, 0.0001, 0, 0 %hc_eff_from_tech = 0.001;
+3, 0.0001, 0.00001, 0, 0  %res_scarcity_factor = 0.0001;
+3, 0.0001, 0.00001, 0, 0  %ind_output_PP_factor = 0.0001;
+3, 0.001, 0.0001, 0, 0  %sigma_pop;
+3, 0.001, 0.0001, 0, 0  %sigma_agr_need;
+3, 0.001, 0.0001, 0, 0  %sigma_ind_need;
+3, 0.001, 0.0001, 0, 0  %sigma_serve_need;
+3, 0.001, 0.0001, 0, 0  %sigma_ind_output;
+3, 0.001, 0.0001, 0, 0  %sigma_agr_output;
+3, 0.001, 0.0001, 0, 0  %sigma_infl;
+3, 0.001, 0.0001, 0, 0  %sigma_res;
+3, 0.001, 0.0001, 0, 0  %sigma_food;
+3, 0.001, 0.0001, 0, 0  %sigma_tech;
+3, 0.001, 0.0001, 0, 0  %sigma_agr_eff;
+3, 0.001, 0.0001, 0, 0  %sigma_ind;
+3, 0.001, 0.0001, 0, 0  %sigma_agr;
+3, 18, 4, 0, 0  %pop_init;
+3, 1, 10, 0, 0  %tech_init;
+3, 14, 4, 0, 0  %tech_infra_init;
+3, 1, 1, 0, 0  %ind_init;
+3, 3, 1, 0, 0  %agr_init;
+3, 36, 8, 0, 0  %food_init;
+3, 100, 10, 0, 0  %env_init;
+3, 1000, 100, 0, 0  %res_init;
+

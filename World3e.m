@@ -1,8 +1,16 @@
+
 addpath(genpath('/home/mrra/CasADi_v3.5.5_linux'));
 import casadi.* 
 T0 = 1950;
-T = 250;
-skip_ML=false;
+dt=0.5;
+T = 125/dt;
+skip_ML=false; % turn on if running consecutive simulations
+
+if ~skip_ML % otherwise, use the functions that were previously computed
+   clearvars -except T skip_ML dt T0
+   close all
+   clc 
+end
 
 %% Variables:
 industrial_capital_output_ratio_mult_from_res_conserv_tech=SX.sym('industrial_capital_output_ratio_mult_from_res_conservation_tech',[T,1]);
@@ -604,7 +612,7 @@ resource_use_factor_1=1;%0;
 % frac_of_ind_capital_allocated_to_obtaining_res_switch_time=1990;
 technology_development_delay=20;
 % PRICE_OF_FOOD=0.22;
-dt=0.5;
+
 Land_Yield_Technology(1)=1;
 land_yield_factor_2(1)=Land_Yield_Technology(1);
 Persistent_Pollution_Technology(1)=1;
@@ -621,10 +629,10 @@ shift_all = T+1;
 shift_fraction_of_industrial_output_allocated_to_agriculture=shift_all;
 shift_indicated_food_per_capita=shift_all;
 shift_average_life_agricultural_inputs=shift_all;
-shift_resource_technology_change_rate=150;%shift_all;
+shift_resource_technology_change_rate=(1975-T0)/dt;%shift_all;
 shift_fraction_of_industrial_capital_for_obtaining_resources=shift_all;
 shift_resource_use_factor=shift_all;
-shift_lifetime_multiplier_from_health_services=80;
+shift_lifetime_multiplier_from_health_services=(1940-T0)/dt;
 shift_fertility_control_effectiveness=T*10;%shift_all;
 shift_births=T*10;%shift_all;
 shift_desired_completed_family_size=T*10;%shift_all;

@@ -18,43 +18,55 @@ import casadi.*
 skip_ML=false; % choose whether to interpolate and extrapolate the lookup tables provided with the World3 model
 
 %% data
+disp('Reading data...')
+
 % load initial states and get variable names
 World3_init_guesses = World3_init2();
 var_names = fields(World3_init_guesses);
 n_var = length(var_names);
 
-% observed variables (MUST MATCH ORDER IN DATA!)
-% TO DO: automate the construction of this
-obs_vars = [...
-    "fertility_control_facilities_per_capita";... %1
-    "perceived_life_expectancy";... %2
-    "delayed_industrial_output_per_capita";... %3
-    "desired_completed_family_size";... %4
-    "maximum_total_fertility";... %5
-    "fecundity_multiplier";... %6
-    "population";... %7
-    "total_fertility";... %8
-    "deaths";... %9
-    "Population_0_To_14";... %10
-    "Population_15_To_44";... %11
-    "Population_45_To_64";... %12
-    "Population_65_Plus";...%13
-    "food";...   %14
-    "industrial_output";...%15
-    "fraction_of_industrial_output_allocated_to_services_1";... %16
-    "Persistent_Pollution";... %17
-    "Nonrenewable_Resources";... %18
-    "Industrial_Capital";... %19
-    "Arable_Land";... %20
-    "life_expectancy";... %21
-    "inflation";... %22
-    "GDP_per_capita";... %23
-    ];
+% load estimation data
+raw_data = readtable('Estimation/my_World3_data.csv');
+
+est_start = 201; 
+est_end = 301; %488;
+H = 25; % forecast horizon
+dt=0.5; % 0.5 => each time step is 6 months
+
+obs_vars = raw_data(:,4:end).Properties.VariableNames; % skip year, quarter, date columns
+% old approach:
+    % observed variables (MUST MATCH ORDER IN DATA!)
+    % obs_vars = [...
+    %     "fertility_control_facilities_per_capita";... %1
+    %     "perceived_life_expectancy";... %2
+    %     "delayed_industrial_output_per_capita";... %3
+    %     "desired_completed_family_size";... %4
+    %     "maximum_total_fertility";... %5
+    %     "fecundity_multiplier";... %6
+    %     "population";... %7
+    %     "total_fertility";... %8
+    %     "deaths";... %9
+    %     "Population_0_To_14";... %10
+    %     "Population_15_To_44";... %11
+    %     "Population_45_To_64";... %12
+    %     "Population_65_Plus";...%13
+    %     "food";...   %14
+    %     "industrial_output";...%15
+    %     "fraction_of_industrial_output_allocated_to_services_1";... %16
+    %     "Persistent_Pollution";... %17
+    %     "Nonrenewable_Resources";... %18
+    %     "Industrial_Capital";... %19
+    %     "Arable_Land";... %20
+    %     "life_expectancy";... %21
+    %     "inflation";... %22
+    %     "GDP_per_capita";... %23
+    %     ];
+% get the variable indices for each observed variable
 n_obs = length(obs_vars);
-obs_var_inds = nan(n_obs,1);
+obs_var_inds = nan(n_obs,1); 
 for v = 1:n_obs
     for i = 1:n_var
-        if strcmp(var_names{i},obs_vars(v))
+        if strcmp(var_names{i},obs_vars(v)) % column names in data must exactly match variable names, including case
             obs_var_inds(v) = i;
             break;
         end
@@ -82,15 +94,7 @@ for v = 1:n_var
     end
 end
 
-disp('Reading data...')
-
-raw_data = readtable('Estimation/my_World3_data.csv');
-
-est_start = 201; %201
-est_end = 488; %301
-H = 25; % forecast horizon
-
-dt=0.5;
+% normalize data
 data = table2array(raw_data(est_start:4*dt:est_end,4:end))./normalization(obs_var_inds); % exclude timestamp column
 T=size(data,1);
 

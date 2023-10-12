@@ -1,0 +1,32 @@
+% /********************************************************************
+% **   Notes:
+% ** 
+% **
+% **   Each row has the lower bound and upper bound of each parameter
+% ********************************************************************/
+% /* Recover pure parameters */
+1e-20,	0.9999999       %h
+1e-20,	0.9999999       %xip
+1e-20,	10              %psipi
+0,	10                  %psiy
+0,	10                  %psidy
+0,	0.99999          %psir_1
+-10, 10               %psir_2
+-10,	10              %abar
+-10,	10              %pibar
+1e-20,	10              %rbar
+0,	0.9999999           %rhob
+0,	0.9999999           %rhoz
+0,	0.9999999           %rhor
+1e-20,	100             %sigma_b
+1e-20,	100             %sigma_z
+1e-20,	100             %sigma_i
+0,	100                 %sigma_s
+0.5,	1.5             %alphaBN
+-1,	1                   %M_b
+-1,	1                   %M_z
+-1,	1                   %M_i
+0, 0.999999999          %rhopi
+0, 100              %sigma_pi
+-1,	1                   %M_p
+

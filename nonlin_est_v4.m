@@ -1,4 +1,4 @@
-function [est_params,traj,shock_vals] = nonlin_est_v4(data,eqns,ineqns,obs_var_inds,shocks,params,param_init_guess,param_lb,param_ub,est_opts)
+function [est_params,traj,shock_vals,flag] = nonlin_est_v4(data,eqns,ineqns,obs_var_inds,shocks,params,param_init_guess,param_lb,param_ub,est_opts)
 % Assumes that CasADi has already been added to the path since this code
 % relies on casadi-cased functions and variables as input. If it is not on
 % the path then add it and import it via the following two commands:
@@ -150,5 +150,6 @@ function [est_params,traj,shock_vals] = nonlin_est_v4(data,eqns,ineqns,obs_var_i
     
     disp("runtime: "+num2str(toc))
 
+    flag = cas.stats.return_status;
     
 end

@@ -1,7 +1,7 @@
 function [sim_traj] = nonlin_sim4b(eqns,ineqns,shocks,shock_vals,params,param_vals)
 % Assumes that CasADi has already been added to the path since this code
 % relies on casadi-cased functions and variables as input. If it is not on
-% the path then add it and import it via the following two commands:
+% the path then add it and import it via the following command:
 %     addpath(genpath('/home/mrra/CasADi_v3.5.5_linux'));
 
 %this version is made for the low var model formulation. Therefore, it
