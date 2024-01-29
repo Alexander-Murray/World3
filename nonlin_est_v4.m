@@ -9,12 +9,15 @@ function [est_params,traj,shock_vals,flag] = nonlin_est_v4(data,eqns,ineqns,obs_
 % variables in the estimation process. Rather, they are the LHS of the
 % equation x(t) = f(x(t-1)|p), where p are the parameters
 
+problem_debug = 0;
+
     import casadi.*
     
     sim_opts = est_opts.sim_opts;
 
     non_nan_data = fill_nan_vals(data);
     normalization_factor = max(max(abs(non_nan_data)),0.0001);%non_nan_data(1,:);
+%     normalization_factor = max(mean(abs(non_nan_data)),0.0001);
     
     %% set up lasso/ridge regression
     if ~est_opts.use_shocks
@@ -42,6 +45,10 @@ function [est_params,traj,shock_vals,flag] = nonlin_est_v4(data,eqns,ineqns,obs_
         
         if est_opts.use_shocks
             vec = [vec;shocks{t}];
+%             vec_lb = [param_lb;-10^4*ones(n_shocks,1)];
+%             vec_ub = [param_ub;10^4*ones(n_shocks,1)];
+            vec_lb = [param_lb;-repmat(normalization_factor',T,1)]; % this assumes each shock corresponds with an obs var
+            vec_ub = [param_ub;repmat(normalization_factor',T,1)]; % this assumes each shock corresponds with an obs var
 
             shock_init{t} = zeros(length(shocks{t}),1);
             if est_opts.try_fancy_shock_initialization 
@@ -54,6 +61,8 @@ function [est_params,traj,shock_vals,flag] = nonlin_est_v4(data,eqns,ineqns,obs_
             x0 = [x0;shock_init{t}]; 
             eqns_temp{t} = eqns{t};
         else
+            vec_lb = [param_lb];
+            vec_ub = [param_ub];
             eqn_fun_temp = Function('f',{params,vertcat(shocks{1:t})},{eqns{t}});
             eqns_temp{t} = eqn_fun_temp(params,vertcat(shock_init{1:t}));
         end
@@ -87,6 +96,34 @@ function [est_params,traj,shock_vals,flag] = nonlin_est_v4(data,eqns,ineqns,obs_
 %        warning('Infeasible initial guess provided. Solver may fail to converge') 
 %     end
 
+    %% check edge cases
+    if problem_debug
+        n_vec = length(vec);
+        jac_fun=Function('f',{vec},{jacobian(cons_fun(vec),vec)});
+        problematic_inds = find(isnan(full(evalf(jac_fun(x0)))));
+        if ~isempty(problematic_inds)
+           warning('problem detected in Jacobian for x0 at equations:')
+           for i = 1:length(problematic_inds)
+               warning(['Jacobian of constraint ' num2str(mod((problematic_inds(i)-1),nINEQ(1)/T)+1) ' at x0 wrt variable ' num2str(ceil((problematic_inds(i))/nINEQ(1))) ' is NaN'])
+           end
+        end
+        
+        problematic_inds2 = find(isnan(full(evalf(jac_fun(vec_lb)))));
+        if ~isempty(problematic_inds2)
+           warning('problem detected in Jacobian for lb at equations:')
+           for i = 1:length(problematic_inds2)
+               warning(['Jacobian of constraint ' num2str(mod((problematic_inds2(i)-1),nINEQ(1)/T)+1) ' at lb wrt variable ' num2str(ceil((problematic_inds2(i))/nINEQ(1))) ' is NaN'])
+           end
+        end
+        problematic_inds3 = find(isnan(full(evalf(jac_fun(vec_ub)))));
+        if ~isempty(problematic_inds3)
+           warning('problem detected in Jacobian for ub at equations:')
+           for i = 1:length(problematic_inds3)
+               warning(['Jacobian of constraint ' num2str(mod((problematic_inds3(i)-1),nINEQ(1)/T)+1) ' at ub wrt variable ' num2str(ceil((problematic_inds3(i))/nINEQ(1))) ' is NaN'])
+           end
+        end
+    end
+
     %% start estimation
     opts = est_opts.est_opts;
     
@@ -96,32 +133,33 @@ function [est_params,traj,shock_vals,flag] = nonlin_est_v4(data,eqns,ineqns,obs_
             nlp =   struct('x',vec,'f',obj_fun(vec));
             cas =   nlpsol('solver',est_opts.solver,nlp,opts);
             sol =   cas('x0', x0,...
-                    'lbx', [param_lb;-10^4*ones(n_shocks,1)],...
-                    'ubx', [param_ub;10^4*ones(n_shocks,1)]);
+                    'lbx', vec_lb,...
+                    'ubx', vec_ub);
 
         else
             nlp =   struct('x',vec,'f',obj_fun(vec));%,'g',traj_fun(vec,sigmoid_factor));
             cas =   nlpsol('solver',est_opts.solver,nlp,opts);
             sol =   cas('x0', x0,...
-                    'lbx', [param_lb],...
-                    'ubx', [param_ub]);
+                    'lbx', vec_lb,...
+                    'ubx', vec_ub);
         end
     else
         if est_opts.use_shocks
+            ineq_lb = -10*min(abs(obj_fun(x0)))*ones(nINEQ);
             nlp =   struct('x',vec,'f',obj_fun(vec),'g',cons_fun(vec));
             cas =   nlpsol('solver',est_opts.solver,nlp,opts);
             sol =   cas('x0', x0,...
-                    'lbx', [param_lb;-10^4*ones(n_shocks,1)],...
-                    'ubx', [param_ub;10^4*ones(n_shocks,1)],...
-                    'lbg', [-inf(nINEQ)],...
+                    'lbx', vec_lb,...
+                    'ubx', vec_ub,...
+                    'lbg', [ineq_lb],... % was -inf(nINEQ) but that lead to problems with dual infeasibility
                     'ubg', [zeros(nINEQ)]);
 
         else
             nlp =   struct('x',vec,'f',obj_fun(vec),'g',cons_fun(vec));
             cas =   nlpsol('solver',est_opts.solver,nlp,opts);
             sol =   cas('x0', x0,...
-                    'lbx', [param_lb],...
-                    'ubx', [param_ub],...
+                    'lbx', vec_lb,...
+                    'ubx', vec_ub,...
                     'lbg', [-inf(nINEQ)],...
                     'ubg', [zeros(nINEQ)]);
         end

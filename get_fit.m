@@ -206,6 +206,12 @@ function [coeffs_winner,fit,fun_text,modelFun_winner] = get_fit(x,y,display_fun,
     end
     modelFun_winner = modelFun{winner};
     
+    %% adjust result for logistic function
+   if winner == 6
+       coeffs_winner(2)=min(coeffs_winner(2),40); % values above 40 can cause numerical issues in the jacobian of the model dynamics
+       warning('adjusting parameter of logistic function to avoid numerical instability')
+   end
+    
     
     %% plot winning model
     xx = min(x):(max(x)-min(x))/100:max(x);

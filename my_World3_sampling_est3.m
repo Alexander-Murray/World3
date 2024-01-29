@@ -3,6 +3,9 @@
 % the final parameter estimates come from the mean of the set of parameter
 % estimates across all iterations
 
+% added canadian inflation
+
+% inflation params estimated separately
 
 clear all;
 close all;
@@ -13,28 +16,35 @@ import casadi.*
 
 skip_ML=false; % choose whether to interpolate and extrapolate the lookup tables provided with the World3 model
 
-diary on
+est_iter_period = 2; % number of timesteps in each iterative regression
+minT = max(H,est_iter_period);
+dt=0.25; % 0.5 => each time step is 6 months
+
+H = 16; % forecast horizon
+
+% data to use for estimation
+est_start_y = '1950';
+est_start_q = '1';
+est_end_y = '2017';
+est_end_q = '4';
+
+% diary on
 
 %% data
 disp('Reading data...')
 
 % load initial states and get variable names
-World3_init_guesses = World3_init2();
+World3_init_guesses = World3_init3();
 var_names = fields(World3_init_guesses);
 n_var = length(var_names);
 
 % load estimation data
 raw_data = readtable('Estimation/my_World3_data.csv');
+all_dates = table2array(raw_data(:,3));
+est_start = find(strcmp([est_start_y 'Q' est_start_q],all_dates));
+est_end = find(strcmp([est_end_y 'Q' est_end_q],all_dates));
 
-H = 16; % forecast horizon
-
-% data to use for estimation
-est_start = 201; %201 = 1950Q1
-est_end = 488-H; %301 = 1975Q1
-
-est_iter_period = 2; % number of timesteps in each iterative regression
-minT = max(H,est_iter_period);
-dt=0.25; % 0.5 => each time step is 6 months
+dates = table2array(raw_data(est_start:est_end+H,3));
 
 obs_vars = raw_data(:,4:end).Properties.VariableNames; % skip year, quarter, date columns
 % old approach:
@@ -76,7 +86,8 @@ for v = 1:n_obs
 %         end
 %     end
 end
-infq_ind = find(strcmp(var_names,"inflation"));
+infq_ind_can = find(strcmp(var_names,"inflation_CAN"));
+infq_ind_world = find(strcmp(var_names,"inflation"));
 
 % put normalization in a struct and an array for easy look-up
 normalization = nan(1,n_var);
@@ -102,7 +113,8 @@ end
 % normalize data
 data = table2array(raw_data(est_start:4*dt:est_end+H,4:end))./normalization(obs_var_inds); % exclude timestamp column
 T=est_end-est_start+1;
-infq_data = lin_interp(raw_data.inflation); % inflation data
+infq_data_CAN = lin_interp(raw_data.inflation_CAN); % inflation data
+infq_data_world = lin_interp(raw_data.inflation); % inflation data
 
 %% set up shocks and initial conditions
 
@@ -608,50 +620,19 @@ technology_development_delay=20;
 % PRICE_OF_FOOD=0.22;
 Nonrenewable_Resources_1950=947945000000/norm.('Nonrenewable_Resources');
 
-%% params to estimate
-% maximum_total_fertility_normal = SX.sym('maximum_total_fertility_normal',1,1);
-% desired_completed_family_size_normal = SX.sym('desired_completed_family_size_normal',1,1);
-% land_fraction_harvested = SX.sym('land_fraction_harvested',1,1);
-% desired_food_ratio = SX.sym('desired_food_ratio',1,1);
-% inherent_land_fertility = SX.sym('inherent_land_fertility',1,1);
-% inv_industrial_output_per_capita_desired = SX.sym('industrial_output_per_capita_desired',1,1);
-% inv_desired_persistent_pollution_index = SX.sym('desired_persistent_pollution_index',1,1);
-% inv_social_discount = SX.sym('social_discount',1,1);
-% industrial_capital_output_ratio_1 = SX.sym('industrial_capital_output_ratio_1',1,1);
-% investment_into_services = SX.sym('investment_into_services',1,1);
-% processing_loss = SX.sym('processing_loss',1,1);
-% average_life_of_land_normal = SX.sym('average_life_of_land_normal',1,1);
-% fraction_of_agricultural_inputs_from_persistent_materials = SX.sym('fraction_of_agricultural_inputs_from_persistent_materials',1,1);
-% fraction_of_resources_from_persistent_materials = SX.sym('fraction_of_resources_from_persistent_materials',1,1);
-% industrial_material_toxicity_index = SX.sym('industrial_material_toxicity_index',1,1);
-% industrial_material_emissions_factor = SX.sym('industrial_material_emissions_factor',1,1);
-% persistent_pollution_generation_rate_factor = SX.sym('persistent_pollution_generation_rate_factor',1,1);
-% life_expectancy_normal = SX.sym('life_expectancy_normal',1,1);
-% resource_use_factor_1 = SX.sym('resource_use_factor_1',1,1);
-% persistent_pollution_generation_factor_1 = SX.sym('persistent_pollution_generation_factor_1',1,1);
-% land_yield_factor_1 = SX.sym('land_yield_factor_1',1,1);
-% service_capital_output_ratio_1 = SX.sym('service_capital_output_ratio_1',1,1);
-% 
-% fcfpc_param = SX.sym('fcfpc_param',1,1);
-% le_param1 = SX.sym('le_param1',1,1);
-% le_param2 = SX.sym('le_param2',1,1);
-% diopc_param1 = SX.sym('diopc_param1',1,1);
-% diopc_param2 = SX.sym('diopc_param2',1,1);
-% ppar_param1 = SX.sym('ppar_param1',1,1);
-% ppar_param2 = SX.sym('ppar_param2',1,1);
-% ppar_param3 = SX.sym('ppar_param3',1,1);
-% 
-% inflation_param1 = SX.sym('inflation_param1',1,1);
-% inflation_param2 = SX.sym('inflation_param2',1,1);
-% inflation_param3 = SX.sym('inflation_param3',1,1);
-% inflation_param4 = SX.sym('inflation_param4',1,1);
-% inflation_param5 = SX.sym('inflation_param5',1,1);
-% inflation_param6 = SX.sym('inflation_param6',1,1);
-% inflation_init_1 = SX.sym('inflation_init_1',1,1);
-% inflation_init_2 = SX.sym('inflation_init_2',1,1);
-% inflation_init_3 = SX.sym('inflation_init_3',1,1);
-% inflation_init_4 = SX.sym('inflation_init_4',1,1);
+world_inflation_param1=2.7304;
+world_inflation_param2=-2.1527;
+world_inflation_param3=0.0950;
+world_inflation_param4=0.3307;
 
+inflation_param1_val=0.4174;
+inflation_param2_val=0.0741;
+inflation_param3_val=0.1266;
+inflation_param4_val=-0.0212;
+inflation_param5_val=-0.0718;
+inflation_param6_val=-0.0865;
+
+%% params to estimate
 param_names = ["maximum_total_fertility_normal";...
     "desired_completed_family_size_normal";...
     "land_fraction_harvested";...
@@ -715,9 +696,9 @@ param_settings.lower_bound.desired_completed_family_size_normal = 3;%1;
 param_settings.init_param_guess.desired_completed_family_size_normal = 3.3;%4;
 param_settings.upper_bound.desired_completed_family_size_normal = 5;%8;
 
-param_settings.lower_bound.land_fraction_harvested = 0.4;
+param_settings.lower_bound.land_fraction_harvested = 0.5;%0.4;
 param_settings.init_param_guess.land_fraction_harvested = 0.7;
-param_settings.upper_bound.land_fraction_harvested = 1;
+param_settings.upper_bound.land_fraction_harvested = 0.9;%1;
 
 param_settings.lower_bound.desired_food_ratio = 1;
 param_settings.init_param_guess.desired_food_ratio = 2;
@@ -827,29 +808,29 @@ param_settings.lower_bound.service_capital_output_ratio_1 = 0.9;%0;
 param_settings.init_param_guess.service_capital_output_ratio_1 = 1;%0.56;
 param_settings.upper_bound.service_capital_output_ratio_1 = 1.1;%5;
 
-param_settings.lower_bound.inflation_param1 = -2;
-param_settings.init_param_guess.inflation_param1 = 1;
-param_settings.upper_bound.inflation_param1 = 2;
+param_settings.lower_bound.inflation_param1 = inflation_param1_val;
+param_settings.init_param_guess.inflation_param1 = inflation_param1_val;
+param_settings.upper_bound.inflation_param1 = inflation_param1_val;
 
-param_settings.lower_bound.inflation_param2 = -2;
-param_settings.init_param_guess.inflation_param2 = 0;
-param_settings.upper_bound.inflation_param2 = 2;
+param_settings.lower_bound.inflation_param2 = inflation_param2_val;
+param_settings.init_param_guess.inflation_param2 = inflation_param2_val;
+param_settings.upper_bound.inflation_param2 = inflation_param2_val;
 
-param_settings.lower_bound.inflation_param3 = -2;
-param_settings.init_param_guess.inflation_param3 = 0;
-param_settings.upper_bound.inflation_param3 = 2;
+param_settings.lower_bound.inflation_param3 = inflation_param3_val;
+param_settings.init_param_guess.inflation_param3 = inflation_param3_val;
+param_settings.upper_bound.inflation_param3 = inflation_param3_val;
 
-param_settings.lower_bound.inflation_param4 = -2;
-param_settings.init_param_guess.inflation_param4 = 0;
-param_settings.upper_bound.inflation_param4 = 2;
+param_settings.lower_bound.inflation_param4 = inflation_param4_val;
+param_settings.init_param_guess.inflation_param4 = inflation_param4_val;
+param_settings.upper_bound.inflation_param4 = inflation_param4_val;
 
-param_settings.lower_bound.inflation_param5 = -2;
-param_settings.init_param_guess.inflation_param5 = 0;
-param_settings.upper_bound.inflation_param5 = 2;%10;
+param_settings.lower_bound.inflation_param5 = inflation_param5_val;
+param_settings.init_param_guess.inflation_param5 = inflation_param5_val;
+param_settings.upper_bound.inflation_param5 = inflation_param5_val;%10;
 
-param_settings.lower_bound.inflation_param6 = -2;
-param_settings.init_param_guess.inflation_param6 = 0;
-param_settings.upper_bound.inflation_param6 = 2;%10;
+param_settings.lower_bound.inflation_param6 = inflation_param6_val;
+param_settings.init_param_guess.inflation_param6 = inflation_param6_val;
+param_settings.upper_bound.inflation_param6 = inflation_param6_val;%10;
 
 % param_settings.lower_bound.inflation_init_1 = -10;
 % param_settings.init_param_guess.inflation_init_1 = 5.7;
@@ -946,12 +927,12 @@ shift_times = [(301-est_start)/(dt*4);...
 
 %% load a simulation
 % this is needed to initialize unobserved state variables
-load("world3_sim.mat"); % load the simulation trajectory (state variable values are needed for this estimation method)
+load("world3_sim2.mat"); % load the simulation trajectory (state variable values are needed for this estimation method)
 if isstruct(sim_traj)
     sim_traj = struct2array(sim_traj)';
 end
 if size(sim_traj,1)~=n_var
-   error('a simulated trajectory is not available for all variables. Check that your simulation (such as World3f) has all of the required variables and that its output has been saved to world3_sim.mat') 
+   error('a simulated trajectory is not available for all variables. Check that your simulation (such as World3g) has all of the required variables and that its output has been saved to world3_sim.mat') 
 end
 if dt~=0.5 % assume that sim_traj has been generated with dt=0.5, since the equations seem to work best with that step length for some reason
    sim_traj_temp = nan(n_var,T+H);
@@ -974,7 +955,7 @@ for var = 1:n_var
 end
 
 % allocate space in memory for initial states and collect them in the init_vars array
-init_vars = SX.sym('init',[n_var+4,1]);
+init_vars = SX.sym('init',[n_var+8,1]);
 for var = 1:n_var
     eval([var_names{var} '_init = SX.sym(''' var_names{var} '_init'',[1,1]);' ])
     
@@ -984,7 +965,12 @@ inflation_init_1 = SX.sym('inflation_init_1',[1,1]);
 inflation_init_2 = SX.sym('inflation_init_2',[1,1]);
 inflation_init_3 = SX.sym('inflation_init_3',[1,1]);
 inflation_init_4 = SX.sym('inflation_init_4',[1,1]);
-init_vars(n_var+1:n_var+4) = [inflation_init_1;inflation_init_2;inflation_init_3;inflation_init_4];
+
+world_inflation_init_1 = SX.sym('world_inflation_init_1',[1,1]);
+world_inflation_init_2 = SX.sym('world_inflation_init_2',[1,1]);
+world_inflation_init_3 = SX.sym('world_inflation_init_3',[1,1]);
+world_inflation_init_4 = SX.sym('world_inflation_init_4',[1,1]);
+init_vars(n_var+1:n_var+8) = [inflation_init_1;inflation_init_2;inflation_init_3;inflation_init_4;world_inflation_init_1;world_inflation_init_2;world_inflation_init_3;world_inflation_init_4];
 
 % define the model dynamics
 %%% TO DO: add forestry and desertification, perceived vs actual NRR
@@ -1364,24 +1350,29 @@ for t = 1:minT
 % outputs
     GDP_per_capita{t}=GDP_per_capita_LOOKUP(industrial_output_per_capita{t}/GDP_pc_unit);
     if t>4
-        inflation{t} = inflation_param1*inflation{t-1}+inflation_param2*inflation{t-2}+inflation_param3*inflation{t-3}+inflation_param4*inflation{t-4} + inflation_param5*fraction_of_resources_remaining{t} + inflation_param6*GDP_per_capita{t}/(10^4);
+        inflation_CAN{t} = inflation_param1*inflation_CAN{t-1}+inflation_param2*inflation_CAN{t-2}+inflation_param3*inflation_CAN{t-3}+inflation_param4*inflation_CAN{t-4} + inflation_param5*fraction_of_resources_remaining{t} + inflation_param6*GDP_per_capita{t}/(10^4);
     elseif t==1
-        inflation{t} = inflation_param1*inflation_init_1+inflation_param2*inflation_init_2+inflation_param3*inflation_init_3+inflation_param4*inflation_init_4 + inflation_param5*fraction_of_resources_remaining{t} + inflation_param6*GDP_per_capita{t}/(10^4);
-
-%         inflation{t} = inflation_init_1;
+        inflation_CAN{t} = inflation_param1*inflation_init_1+inflation_param2*inflation_init_2+inflation_param3*inflation_init_3+inflation_param4*inflation_init_4 + inflation_param5*fraction_of_resources_remaining{t} + inflation_param6*GDP_per_capita{t}/(10^4);
     elseif t==2
-        inflation{t} = inflation_param1*inflation{t-1}+inflation_param2*inflation_init_1+inflation_param3*inflation_init_2+inflation_param4*inflation_init_3 + inflation_param5*fraction_of_resources_remaining{t} + inflation_param6*GDP_per_capita{t}/(10^4);
-
-%         inflation{t} = inflation_init_2;
+        inflation_CAN{t} = inflation_param1*inflation_CAN{t-1}+inflation_param2*inflation_init_1+inflation_param3*inflation_init_2+inflation_param4*inflation_init_3 + inflation_param5*fraction_of_resources_remaining{t} + inflation_param6*GDP_per_capita{t}/(10^4);
     elseif t==3
-        inflation{t} = inflation_param1*inflation{t-1}+inflation_param2*inflation{t-2}+inflation_param3*inflation_init_1+inflation_param4*inflation_init_2 + inflation_param5*fraction_of_resources_remaining{t} + inflation_param6*GDP_per_capita{t}/(10^4);
-        
-%         inflation{t} = inflation_init_3;
+        inflation_CAN{t} = inflation_param1*inflation_CAN{t-1}+inflation_param2*inflation_CAN{t-2}+inflation_param3*inflation_init_1+inflation_param4*inflation_init_2 + inflation_param5*fraction_of_resources_remaining{t} + inflation_param6*GDP_per_capita{t}/(10^4);
     elseif t==4
-        inflation{t} = inflation_param1*inflation{t-1}+inflation_param2*inflation{t-2}+inflation_param3*inflation{t-3}+inflation_param4*inflation_init_1 + inflation_param5*fraction_of_resources_remaining{t} + inflation_param6*GDP_per_capita{t}/(10^4);
-        
-%         inflation{t} = inflation_init_4;
+        inflation_CAN{t} = inflation_param1*inflation_CAN{t-1}+inflation_param2*inflation_CAN{t-2}+inflation_param3*inflation_CAN{t-3}+inflation_param4*inflation_init_1 + inflation_param5*fraction_of_resources_remaining{t} + inflation_param6*GDP_per_capita{t}/(10^4);
     end
+    
+    if t>4
+        inflation{t} = world_inflation_param1*inflation{t-1}+world_inflation_param2*inflation{t-2}+world_inflation_param3*inflation{t-3}+world_inflation_param4*inflation{t-4};
+    elseif t==1
+        inflation{t} = world_inflation_param1*world_inflation_init_1+world_inflation_param2*world_inflation_init_2+world_inflation_param3*world_inflation_init_3+world_inflation_param4*world_inflation_init_4;
+    elseif t==2
+        inflation{t} = world_inflation_param1*inflation{t-1}+world_inflation_param2*world_inflation_init_1+world_inflation_param3*world_inflation_init_2+world_inflation_param4*world_inflation_init_3;
+    elseif t==3
+        inflation{t} = world_inflation_param1*inflation{t-1}+world_inflation_param2*inflation{t-2}+world_inflation_param3*world_inflation_init_1+world_inflation_param4*world_inflation_init_2;
+    elseif t==4
+        inflation{t} = world_inflation_param1*inflation{t-1}+world_inflation_param2*inflation{t-2}+world_inflation_param3*inflation{t-3}+world_inflation_param4*world_inflation_init_1;
+    end
+    
 %   birth_rate(t)=THOUSAND*births(t)/population(t);
 %   death_rate(t)=THOUSAND*deaths(t)/population(t);
 % 	service_output_2005_value(t)=service_output(t)*w3_real_exhange_rate;
@@ -1407,7 +1398,7 @@ for t = 1:minT
             eval(['ineq2eq{t} = [ineq2eq{t};-0.3-' var_names{v} '{t}];']);
         elseif strcmp(var_names{v},'family_income_expectation')
             eval(['ineq2eq{t} = [ineq2eq{t};-0.3-' var_names{v} '{t}];']);
-        elseif strcmp(var_names{v},'inflation')
+        elseif strcmp(var_names{v},'inflation') || strcmp(var_names{v},'inflation_CAN')
             % no constraint
 %         elseif v==24 % marginal_productivity_of_agricultural_inputs
 %             eval(['ineq2eq{t} = [ineq2eq{t};10^-3-' var_names{v} '{t}];']);
@@ -1478,10 +1469,16 @@ for t = 1:est_iter_period:T
             
             eval(['init_var_vals(' num2str(var) ') = ' var_names{var} '_init;']); % collect all initial conditions
         end
-        init_var_vals(n_var+1) = infq_data(est_start+t-1); %inflation_init_1
-        init_var_vals(n_var+2) = infq_data(est_start+t-2); %inflation_init_2
-        init_var_vals(n_var+3) = infq_data(est_start+t-3); %inflation_init_3
-        init_var_vals(n_var+4) = infq_data(est_start+t-4); %inflation_init_4
+        init_var_vals(n_var+1) = infq_data_CAN(est_start+t-1); %inflation_init_1
+        init_var_vals(n_var+2) = infq_data_CAN(est_start+t-2); %inflation_init_2
+        init_var_vals(n_var+3) = infq_data_CAN(est_start+t-3); %inflation_init_3
+        init_var_vals(n_var+4) = infq_data_CAN(est_start+t-4); %inflation_init_4
+        
+        init_var_vals(n_var+5) = infq_data_world(est_start+t-1); %inflation_init_1
+        init_var_vals(n_var+6) = infq_data_world(est_start+t-2); %inflation_init_2
+        init_var_vals(n_var+7) = infq_data_world(est_start+t-3); %inflation_init_3
+        init_var_vals(n_var+8) = infq_data_world(est_start+t-4); %inflation_init_4
+        
 %     end
 
     % create system of equations for nonlinear estimation
@@ -1523,13 +1520,19 @@ for t = 1:est_iter_period:T
     est_time = toc
     
     param_sol{count} = est_params;
-    sol_flags{count} = flag;
+    sol_flags{count}=flag;
     count = count+1;
 end
 
+%% estimate inflation parameters
+infl_params = AR_est_world3(data(1:T,find(strcmp(obs_vars,"inflation_CAN"))),[data(1:T,find(strcmp(obs_vars,"Nonrenewable_Resources")))/Nonrenewable_Resources_1950,data(1:T,find(strcmp(obs_vars,"GDP_per_capita")))/10^4],4);
+
+%% save parameter results
+
 param_sols = horzcat(param_sol{:});
-param_means = mean(param_sols');
-param_stds = std(param_sols');
+param_means = [mean(param_sols')];
+param_means(end-5:end)=infl_params; % use independently estimated parameters
+param_stds = [std(param_sols')];
 
 save('param_mean.mat','param_means')
 save('param_sols.mat','param_sols')
@@ -1538,20 +1541,20 @@ save('param_sols.mat','param_sols')
 disp('Forecasting...')
 
 % to do: use names and then search var_names
-vars_to_plot = ["population";...
-                "food_per_capita";...
-                "industrial_output_per_capita";...
-                "Persistent_Pollution";...
-                "Nonrenewable_Resources";...
-                "inflation";...
-                "land_yield";...
-                "Arable_Land";...
-                "Land_Fertility";...
-                "land_yield_multiplier_from_capital";...
-                "agricultural_input_per_hectare";...
-                "Agricultural_Inputs";...
-                "fraction_of_resources_remaining";...
-                "GDP_per_capita";...
+vars_to_plot = ["population";... %1
+                "food_per_capita";... %2
+                "industrial_output_per_capita";... %3
+                "Persistent_Pollution";... %4
+                "Nonrenewable_Resources";... %5
+                "inflation_CAN";... %6
+                "land_yield";... %7
+                "Arable_Land";... %8
+                "Land_Fertility";... %9
+                "land_yield_multiplier_from_capital";... %10
+                "agricultural_input_per_hectare";... %11
+                "Agricultural_Inputs";... %12
+                "fraction_of_resources_remaining";... %13
+                "GDP_per_capita";... %14
                 ];
 for v = 1:length(vars_to_plot)
     var_inds_to_plot(v) = find(strcmp(vars_to_plot(v),var_names));
@@ -1565,7 +1568,7 @@ for h = 1:H
 
     % run the simulation
     %forecast_eq{h} = eq_fun{h}(param_means,[sim_traj(:,T);sim_traj(infq_ind,T-1);sim_traj(infq_ind,T-2);sim_traj(infq_ind,T-3);sim_traj(infq_ind,T-4)],shift_times-T-h+1,zeros(n_shocks*h,1));
-    forecast_eq{h} = eq_fun{h}(param_means,[sim_traj(:,T);infq_data(est_start+T-1);infq_data(est_start+T-2);infq_data(est_start+T-3);infq_data(est_start+T-4)],shift_times-T-h+1,zeros(n_shocks*h,1));
+    forecast_eq{h} = eq_fun{h}(param_means,[sim_traj(:,T);infq_data_CAN(est_start+T-1);infq_data_CAN(est_start+T-2);infq_data_CAN(est_start+T-3);infq_data_CAN(est_start+T-4);infq_data_world(est_start+T-1);infq_data_world(est_start+T-2);infq_data_world(est_start+T-3);infq_data_world(est_start+T-4)],shift_times-T-h+1,zeros(n_shocks*h,1));
 end
 %[forecast_traj] = nonlin_sim4b(forecast_eq,[],{shocks{1:H}},no_shocks,params,param_means);
 forecast_traj=full(evalf(horzcat(forecast_eq{:})));
@@ -1578,7 +1581,7 @@ for tt = 1:est_iter_period:T
         no_shocks{tt+h-1} = zeros(n_shocks,1);
         
         % run the simulation
-        sim_eq{tt+h-1} = eq_fun{h}(param_means,[sim_traj(:,tt);infq_data(est_start+tt-1);infq_data(est_start+tt-2);infq_data(est_start+tt-3);infq_data(est_start+tt-4)],shift_times-tt-h+1,zeros(n_shocks*h,1));
+        sim_eq{tt+h-1} = eq_fun{h}(param_means,[sim_traj(:,tt);infq_data_CAN(est_start+tt-1);infq_data_CAN(est_start+tt-2);infq_data_CAN(est_start+tt-3);infq_data_CAN(est_start+tt-4);infq_data_world(est_start+tt-1);infq_data_world(est_start+tt-2);infq_data_world(est_start+tt-3);infq_data_world(est_start+tt-4)],shift_times-tt-h+1,zeros(n_shocks*h,1));
     end
 end
 % [in_sample_traj] = nonlin_sim4b(sim_eq,[],shocks,no_shocks,params,param_means);
@@ -1587,6 +1590,7 @@ in_sample_traj = full(evalf(horzcat(sim_eq{:})));
 % out of sample fit
 figure(1)
 hold on
+grid on
 tt=T+1:T+H;
 plot(tt,forecast_traj(var_inds_to_plot(1),tt-T)/plot_norm(1),'r') %population
 plot(tt,forecast_traj(var_inds_to_plot(2),tt-T)/plot_norm(2),'g') %food_per_capita
@@ -1601,6 +1605,8 @@ plot(tt,sim_traj(var_inds_to_plot(4),tt)/plot_norm(4),'m*') %persistent_pollutio
 plot(tt,sim_traj(var_inds_to_plot(5),tt)/plot_norm(5),'b*') %Nonrenewable_Resources
 legend('population','food per capita','industrial output per capita','Persistent Pollution','Nonrenewable Resources')
 hold off
+xticks(T+1:T+H)
+set(gca,'XTickLabel',vertcat(dates{T+1:T+H}),'fontsize',12)
 
 % inflation
 figure(2)
@@ -1608,9 +1614,11 @@ tt=T+1:T+H;
 hold on
 plot(tt,forecast_traj(var_inds_to_plot(6),tt-T),'b') % inflation
 % plot(tt,sim_traj(var_inds_to_plot(6),tt),'b*') % inflation
-plot(tt,data(tt,find(strcmp(obs_vars,"inflation"))),'b*') %inflation
+plot(tt,data(tt,find(strcmp(obs_vars,"inflation_CAN"))),'b*') %inflation
 legend('inflation')
 hold off
+xticks(T+1:T+H)
+set(gca,'XTickLabel',vertcat(dates{T+1:T+H}),'fontsize',12)
 
 % in sample fit (sim_traj)
 % figure(3)
@@ -1677,6 +1685,8 @@ plot(tt,data(tt,find(strcmp(obs_vars,"Persistent_Pollution")))/(0.1*plot_norm(4)
 plot(tt,data(tt,find(strcmp(obs_vars,"Nonrenewable_Resources")))/plot_norm(5),'b*') %Nonrenewable_Resources
 hold off
 legend('population','food per capita','food','GDP per capita','industrial output per capita','Persistent Pollution','Nonrenewable Resources')
+xticks(1:16:T)
+set(gca,'XTickLabel',vertcat(dates{1:16:T}),'fontsize',12)
 
 % inflation
 figure(7)
@@ -1684,11 +1694,12 @@ tt=1:T;
 hold on
 plot(tt,in_sample_traj(var_inds_to_plot(6),tt),'b') % inflation
 % plot(tt,sim_traj(var_inds_to_plot(6),tt),'b*') % inflation
-plot(tt,data(tt,find(strcmp(obs_vars,"inflation"))),'b*') %inflation
+plot(tt,data(tt,find(strcmp(obs_vars,"inflation_CAN"))),'b*') %inflation
 % plot(tt,data(tt,find(strcmp(obs_vars,"GDP_per_capita"))),'g*') %GDP_per_capita
 legend('inflation')
 hold off
-
+xticks(1:16:T)
+set(gca,'XTickLabel',vertcat(dates{1:16:T}),'fontsize',12)
 disp('Done')
 
-diary off
+% diary off

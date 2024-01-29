@@ -1,3 +1,4 @@
+% this versino incldues canadian inflation
 addpath(genpath('/home/mrra/CasADi_v3.5.5_linux'));
 import casadi.* 
 T0 = 1950;
@@ -196,6 +197,7 @@ food=SX.sym('food',[T,1]);
 jobs=SX.sym('jobs',[T,1]);
 GDP_per_capita=SX.sym('GDP_per_capita',[T,1]);
 inflation=SX.sym('inflation',[T,1]);
+inflation_CAN=SX.sym('inflation_CAN',[T,1]);
 
  %% Tables:
 if ~skip_ML
@@ -570,16 +572,25 @@ desired_resource_use_rate=4.8e+009;
 technology_development_delay=20;
 % PRICE_OF_FOOD=0.22;
 
-inflation_init1 = 1;
-inflation_init2 = 1;
-inflation_init3 = 1;
-inflation_init4 = 1;
+inflation_init_1 = 1;
+inflation_init_2 = 1;
+inflation_init_3 = 1;
+inflation_init_4 = 1;
 inflation_param1 = 1;
 inflation_param2 = -0.4;
 inflation_param3 = 0.8;
 inflation_param4 = -0.73;
 inflation_param5 = 4;
 inflation_param6 = 0.005;
+
+world_inflation_init_1 = 1;
+world_inflation_init_2 = 1;
+world_inflation_init_3 = 1;
+world_inflation_init_4 = 1;
+world_inflation_param1=2.7304;
+world_inflation_param2=-2.1527;
+world_inflation_param3=0.0950;
+world_inflation_param4=0.3307;
 
 % initial_perceived_life_expectancy=28.04366986;%57.94;
 % perceived_life_expectancy(1)=initial_perceived_life_expectancy;
@@ -1188,15 +1199,27 @@ fertility_control_facilities_per_capita = lin_interp(fertility_control_facilitie
 	
     GDP_per_capita(t)=GDP_per_capita_LOOKUP(industrial_output_per_capita(t)/GDP_pc_unit);
     if t>4
-        inflation(t) = inflation_param1*inflation(t-1)+inflation_param2*inflation(t-2)+inflation_param3*inflation(t-3)+inflation_param4*inflation(t-4) + inflation_param5*fraction_of_resources_remaining(t) + inflation_param6*GDP_per_capita(t);
+        inflation_CAN(t) = inflation_param1*inflation_CAN(t-1)+inflation_param2*inflation_CAN(t-2)+inflation_param3*inflation_CAN(t-3)+inflation_param4*inflation_CAN(t-4) + inflation_param5*fraction_of_resources_remaining(t) + inflation_param6*GDP_per_capita(t)/(10^4);
     elseif t==1
-        inflation(t) = inflation_init1;
+        inflation_CAN(t) = inflation_param1*inflation_init_1+inflation_param2*inflation_init_2+inflation_param3*inflation_init_3+inflation_param4*inflation_init_4 + inflation_param5*fraction_of_resources_remaining(t) + inflation_param6*GDP_per_capita(t)/(10^4);
     elseif t==2
-        inflation(t) = inflation_init2;
+        inflation_CAN(t) = inflation_param1*inflation_CAN(t-1)+inflation_param2*inflation_init_1+inflation_param3*inflation_init_2+inflation_param4*inflation_init_3 + inflation_param5*fraction_of_resources_remaining(t) + inflation_param6*GDP_per_capita(t)/(10^4);
     elseif t==3
-        inflation(t) = inflation_init3;
+        inflation_CAN(t) = inflation_param1*inflation_CAN(t-1)+inflation_param2*inflation_CAN(t-2)+inflation_param3*inflation_init_1+inflation_param4*inflation_init_2 + inflation_param5*fraction_of_resources_remaining(t) + inflation_param6*GDP_per_capita(t)/(10^4);
     elseif t==4
-        inflation(t) = inflation_init4;
+        inflation_CAN(t) = inflation_param1*inflation_CAN(t-1)+inflation_param2*inflation_CAN(t-2)+inflation_param3*inflation_CAN(t-3)+inflation_param4*inflation_init_1 + inflation_param5*fraction_of_resources_remaining(t) + inflation_param6*GDP_per_capita(t)/(10^4);
+    end
+    
+    if t>4
+        inflation(t) = world_inflation_param1*inflation(t-1)+world_inflation_param2*inflation(t-2)+world_inflation_param3*inflation(t-3)+world_inflation_param4*inflation(t-4);
+    elseif t==1
+        inflation(t) = world_inflation_param1*world_inflation_init_1+world_inflation_param2*world_inflation_init_2+world_inflation_param3*world_inflation_init_3+world_inflation_param4*world_inflation_init_4;
+    elseif t==2
+        inflation(t) = world_inflation_param1*inflation(t-1)+world_inflation_param2*world_inflation_init_1+world_inflation_param3*world_inflation_init_2+world_inflation_param4*world_inflation_init_3;
+    elseif t==3
+        inflation(t) = world_inflation_param1*inflation(t-1)+world_inflation_param2*inflation(t-2)+world_inflation_param3*world_inflation_init_1+world_inflation_param4*world_inflation_init_2;
+    elseif t==4
+        inflation(t) = world_inflation_param1*inflation(t-1)+world_inflation_param2*inflation(t-2)+world_inflation_param3*inflation(t-3)+world_inflation_param4*world_inflation_init_1;
     end
     
     % outputs
@@ -1296,7 +1319,7 @@ hold off
 legend('population','food per capita','industrial output per capita','Persistent Pollution Index','Nonrenewable Resources')
 
 %% save simulation
-World3_init_guesses = World3_init2();
+World3_init_guesses = World3_init3();
 var_names = fields(World3_init_guesses);
 normalization = nan(1,n_var);
 for v = 1:length(var_names)
@@ -1315,4 +1338,4 @@ for v = 1:length(var_names)
         eval(['sim_traj.(var_names{' num2str(v) '}) = ' var_names{v} './normalization(' num2str(v) ');'])
     end
 end
-save('world3_sim.mat','sim_traj')
+save('world3_sim2.mat','sim_traj')
