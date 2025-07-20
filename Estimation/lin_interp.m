@@ -26,7 +26,11 @@ function non_nan_data = lin_interp(data)
                 last_data = data(last_non_nan_ind,c);
             end
             if next_non_nan_ind == length(data(:,c))+1
-                next_data = last_data + (all_non_nans(end)-all_non_nans(end-1))*(last_data-data(all_non_nans(end-2),c))/(last_non_nan_ind-all_non_nans(end-2));
+                try
+                    next_data = last_data + (all_non_nans(end)-all_non_nans(end-1))*(last_data-data(all_non_nans(end-2),c))/(last_non_nan_ind-all_non_nans(end-2));
+                catch
+                    next_data = last_data;
+                end
             else
                 next_data = data(next_non_nan_ind,c);
             end
