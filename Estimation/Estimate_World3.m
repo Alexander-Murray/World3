@@ -22,7 +22,7 @@ import casadi.*
 interp = 1; % 0 = no interpolation, 1=linear interpolation
 skip_ML=false; % choose whether to interpolate and extrapolate the lookup tables provided with the World3 model
 
-save_plots = true;
+save_plots = false;
 est_params = true;
 est_infq_params=true;
 eval_jacobian=true;
@@ -121,7 +121,7 @@ end
 
 % normalize data
 data = table2array(raw_data(est_start:4*dt:est_end+H,4:end))./normalization(obs_var_inds); % exclude timestamp column
-T=H;%est_end-est_start+1;
+T=est_end-est_start+1;
 infq_data_CAN = lin_interp(raw_data.inflation_CAN); % inflation data
 infq_data_world = lin_interp(raw_data.inflation); % inflation data
 
@@ -1134,7 +1134,7 @@ for tt = 1:est_iter_period:T
 end
 % [in_sample_traj] = nonlin_sim4b(sim_eq,[],shocks,no_shocks,params,param_means);
 in_sample_traj = full(evalf(horzcat(sim_eq{:})));
-save('in_sample_traj.mat','in_sample_traj')
+save('in_sample_traj_new.mat','in_sample_traj')
 
 %% save Jacobian (optional)
 if eval_jacobian
@@ -1179,13 +1179,59 @@ for i = 1:size(Trans_mat,1)
             else
                 edge_list{counter}=[-Trans_mat(i,j),var_names(i),var_names(j)];
             end
+            edge_indices{counter-1}=[i,j];
            counter = counter + 1;
         end
     end
 end
 Table = array2table(vertcat(edge_list{:}));
-writetable(Table,'edges_World3.csv','WriteRowNames',false,'WriteVariableNames',false)
+writetable(Table,'fixed_edges_World3.csv','WriteRowNames',false,'WriteVariableNames',false)
 
+% get edge values for time horizon
+edge_list_all_T{1}=["Target","Source",dates{1:T}];
+for tt = 1:T
+    world3_jac_eval_temp = world3_jac_eq(init_param_guess, reshape(in_sample_traj(:,tt:tt+1),n_var*2,1), init_var_vals, shift_times-tt+1, zeros(n_shocks*3,1));
+    Trans_mat_temp = full(evalf(world3_jac_eval_temp));
+    for e = 1:size(edge_list,2)-1
+        if tt==1
+            if j>n_var
+                edge_list_all_T{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2)-n_var)];
+            else
+                edge_list_all_T{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2))];
+            end
+        end
+        edge_list_all_T{e+1}=[edge_list_all_T{e+1}, -Trans_mat_temp(edge_indices{e}(1),edge_indices{e}(2))];
+    end
+end
+Table = array2table(vertcat(edge_list_all_T{:}));
+writetable(Table,'timeline_edges_World3.csv','WriteRowNames',false,'WriteVariableNames',false)
+
+% use evaluated jacobian and data as transition matrix
+edge_list_all_T_semantic{1}=["Target","Source",dates{1:T}];
+for tt = 1:T
+    % get sim data
+    world3_jac_eval_temp = world3_jac_eq(init_param_guess, reshape(in_sample_traj(:,tt:tt+1),n_var*2,1), init_var_vals, shift_times-tt+1, zeros(n_shocks*3,1));
+    Trans_mat_temp = full(evalf(world3_jac_eval_temp));
+    % adjust weights using sim data values
+    for r = 1:n_var
+    Trans_mat_temp(r,:) = Trans_mat_temp(r,:).*reshape(in_sample_traj(:,tt:tt+1),n_var*2,1)';
+    end
+    % write adjusted edge weights
+    for e = 1:size(edge_list,2)-1
+        if tt==1
+            if j>n_var
+                edge_list_all_T_semantic{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2)-n_var)];
+            else
+                edge_list_all_T_semantic{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2))];
+            end
+        end
+        edge_list_all_T_semantic{e+1}=[edge_list_all_T_semantic{e+1}, -Trans_mat_temp(edge_indices{e}(1),edge_indices{e}(2))];
+    end
+end
+Table = array2table(vertcat(edge_list_all_T_semantic{:}));
+writetable(Table,'semantic_timeline_edges_World3.csv','WriteRowNames',false,'WriteVariableNames',false)
+
+% get node values for time horizon
 timeline{1}=["name",dates{1:T}];
 for i = 1:length(var_names)
    timeline{i+1} = [string(var_names{i}),in_sample_traj(i,1:T)];
