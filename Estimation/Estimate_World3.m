@@ -1139,36 +1139,76 @@ save('in_sample_traj_new.mat','in_sample_traj')
 %% save Jacobian (optional)
 if eval_jacobian
 eq_vars=SX.sym('eqns',[2*n_var, 1]);
-tt=3;
-for v = 1:n_var
-    eval([var_names{v} '_t=SX.sym(''' var_names{v} '_t'',[1,1]);']);
-    eval([var_names{v} '{' num2str(tt-1) '}=SX.sym(''' var_names{v} '_tm1'',[1,1]);']);
+% old approach: substitute into equations
+% tt=3;
+% for v = 1:n_var
+%     eval([var_names{v} '_t=SX.sym(''' var_names{v} '_t'',[1,1]);']);
+%     eval([var_names{v} '{' num2str(tt-1) '}=SX.sym(''' var_names{v} '_tm1'',[1,1]);']);
+% %     eval([var_names{v} '_tm1=SX.sym(''' var_names{v} '_tm1'',[1,1]);']);
+%     eval(['eq_vars(' num2str(v) ') = ' var_names{v} '_t;']);
+%     eval(['eq_vars(' num2str(n_var+v) ') = ' var_names{v} '{' num2str(tt-1) '};']);   
+% %     eval(['eq_vars(' num2str(n_var+v) ') = ' var_names{v} '_tm1;']);   
+% end
+% t=tt;
+% World3_eqns;
+% 
+% residual = SX.sym('res',[n_var,1]);
+% for v = 1:n_var
+%     eval(['residual(' num2str(v) ') = ' var_names{v} '_t - ' var_names{v} '{' num2str(tt) '};']); % var_names{v}_t  for the symbolic LHS and var_names{v}{3} for the RHS of the dynamic system
+% end
+
+% new approach: construct residuals
+% t=2;tt=t;
+% for v = 1:n_var
+%     eval([var_names{v} '_t=SX.sym(''' var_names{v} '_t'',[1,1]);']);
+% %     eval([var_names{v} '{' num2str(t) '}=SX.sym(''' var_names{v} '_t'',[1,1]);']);  
 %     eval([var_names{v} '_tm1=SX.sym(''' var_names{v} '_tm1'',[1,1]);']);
-    eval(['eq_vars(' num2str(v) ') = ' var_names{v} '_t;']);
-    eval(['eq_vars(' num2str(n_var+v) ') = ' var_names{v} '{' num2str(tt-1) '};']);   
-%     eval(['eq_vars(' num2str(n_var+v) ') = ' var_names{v} '_tm1;']);   
-end
-t=tt;
-World3_eqns;
+% %     eval([var_names{v} '{' num2str(t-1) '}=SX.sym(''' var_names{v} '_tm1'',[1,1]);']); 
+%     eval(['eq_vars(' num2str(v) ') = ' var_names{v} '_t;']);
+%     eval(['eq_vars(' num2str(n_var+v) ') = ' var_names{v} '_tm1;']); 
+% end
+% World3_residuals;
+% residual_expr = Function('residual_expr',{params,eq_vars,init_vars,shifts,vertcat(shocks{1:tt})},{eq{t}});
+% 
+% %construct transition matrix
+% % Symbolic residual only (without evaluating it yet)
+% % residual_expr = Function('residual_expr',{params,eq_vars,init_vars,shifts,vertcat(shocks{1:tt})},{residual});
+% % Symbolically define jacobian of residual wrt eq_vars
+% % world3_jac = jacobian(residual, eq_vars);
+% world3_jac = jacobian(residual_expr(init_param_guess,eq_vars,init_var_vals, shift_times-tt+1, zeros(n_shocks*tt,1)), eq_vars);
+% % Create symbolic function for the Jacobian
+% world3_jac_eq = Function('jacobian',{params,eq_vars,init_vars,shifts,vertcat(shocks{1:tt})},{world3_jac});
+% % evaluate using the sim trajectory
+% world3_jac_eval = world3_jac_eq(init_param_guess, reshape(in_sample_traj(:,tt-1:tt),n_var*2,1), init_var_vals, shift_times-tt+1, zeros(n_shocks*tt,1));
+% % remove inflation vars
+% % world3_jac_eval = world3_jac_eval(:,1:n_var); 
+% Trans_mat = full(evalf(world3_jac_eval));
 
-residual = SX.sym('res',[n_var,1]);
+% new new approach: use small deviations of prev vals to test sensitivity to obtain transition matrix values
+tt=2;h=2;
+Trans_mat_raw = zeros(n_var,n_var);
+infq_ = [infq_data_CAN(est_start+tt-1);infq_data_CAN(est_start+tt-2);infq_data_CAN(est_start+tt-3);infq_data_CAN(est_start+tt-4);infq_data_world(est_start+tt-1);infq_data_world(est_start+tt-2);infq_data_world(est_start+tt-3);infq_data_world(est_start+tt-4)];
+baseline_results = eq_fun{h}(param_means,[sim_traj(:,tt);infq_],shift_times-tt-h+1,zeros(n_shocks*h,1));
+% baseline_results_1 = eq_fun{h}(param_means,[sim_traj(:,tt);infq_],shift_times-tt-h+1,zeros(n_shocks*h,1));
+% baseline_results = eq_fun{h+1}(param_means,[baseline_results_1;infq_],shift_times-tt-h+1,zeros(n_shocks*(h+1),1));
 for v = 1:n_var
-    eval(['residual(' num2str(v) ') = ' var_names{v} '_t - ' var_names{v} '{' num2str(tt) '};']); % var_names{v}_t  for the symbolic LHS and var_names{v}{3} for the RHS of the dynamic system
+    delta = zeros(n_var,1); 
+    if sim_traj(v,tt)==0
+        delta(v)=10^-6;
+    else
+        delta(v)=sim_traj(v,tt)/10^6;
+    end
+    sim_results = eq_fun{h}(param_means,[sim_traj(:,tt)+delta;infq_],shift_times-tt-h+1,zeros(n_shocks*h,1));
+%     sim_results_1 = eq_fun{h}(param_means,[sim_traj(:,tt)+delta;infq_],shift_times-tt-h+1,zeros(n_shocks*h,1));
+%     sim_results = eq_fun{h+1}(param_means,[sim_results_1;infq_],shift_times-tt-h+2,zeros(n_shocks*(h+1),1));
+    Trans_mat_raw(v,:) = full(evalf(abs(baseline_results-sim_results)));
+%     if(sum(full(evalf(abs(baseline_results-sim_results))))==0)
+%        disp(var_names{v}) 
+%     end
 end
+Trans_mat = max(max(Trans_mat_raw))*Trans_mat_raw;
 
-% Symbolic residual only (without evaluating it yet)
-residual_expr = Function('residual_expr',{params,eq_vars,init_vars,shifts,vertcat(shocks{1:tt})},{residual});
-% Symbolically define jacobian of residual wrt eq_vars
-world3_jac = jacobian(residual, eq_vars);
-% Create symbolic function for the Jacobian
-world3_jac_eq = Function('jacobian',{params,eq_vars,init_vars,shifts,vertcat(shocks{1:tt})},{world3_jac});
-% evaluate using the sim trajectory
-world3_jac_eval = world3_jac_eq(init_param_guess, reshape(in_sample_traj(:,tt-1:tt),n_var*2,1), init_var_vals, shift_times-tt+1, zeros(n_shocks*tt,1));
-% remove inflation vars
-% world3_jac_eval = world3_jac_eval(:,1:n_var); 
-
-% use evaluated jacobian as transition matrix
-Trans_mat = full(evalf(world3_jac_eval));
+% write edge weights using transition matrix
 edge_list{1}=["Edge Weight","Target","Source"];
 counter = 2;
 for i = 1:size(Trans_mat,1)
@@ -1188,13 +1228,14 @@ Table = array2table(vertcat(edge_list{:}));
 writetable(Table,'fixed_edges_World3.csv','WriteRowNames',false,'WriteVariableNames',false)
 
 % get edge values for time horizon
+edge_list_all_T=cell(length(edge_indices),1);
 edge_list_all_T{1}=["Target","Source",dates{1:T}];
 for tt = 1:T
-    world3_jac_eval_temp = world3_jac_eq(init_param_guess, reshape(in_sample_traj(:,tt:tt+1),n_var*2,1), init_var_vals, shift_times-tt+1, zeros(n_shocks*3,1));
+    world3_jac_eval_temp = world3_jac_eq(init_param_guess, reshape(in_sample_traj(:,tt:tt+1),n_var*2,1), init_var_vals, shift_times-tt+1, zeros(n_shocks*t,1));
     Trans_mat_temp = full(evalf(world3_jac_eval_temp));
-    for e = 1:size(edge_list,2)-1
+    for e = 1:length(edge_indices)
         if tt==1
-            if j>n_var
+            if edge_indices{e}(2)>n_var
                 edge_list_all_T{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2)-n_var)];
             else
                 edge_list_all_T{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2))];
@@ -1207,19 +1248,20 @@ Table = array2table(vertcat(edge_list_all_T{:}));
 writetable(Table,'timeline_edges_World3.csv','WriteRowNames',false,'WriteVariableNames',false)
 
 % use evaluated jacobian and data as transition matrix
+edge_list_all_T_semantic=cell(length(edge_indices),1);
 edge_list_all_T_semantic{1}=["Target","Source",dates{1:T}];
 for tt = 1:T
     % get sim data
-    world3_jac_eval_temp = world3_jac_eq(init_param_guess, reshape(in_sample_traj(:,tt:tt+1),n_var*2,1), init_var_vals, shift_times-tt+1, zeros(n_shocks*3,1));
+    world3_jac_eval_temp = world3_jac_eq(init_param_guess, reshape(in_sample_traj(:,tt:tt+1),n_var*2,1), init_var_vals, shift_times-tt+1, zeros(n_shocks*t,1));
     Trans_mat_temp = full(evalf(world3_jac_eval_temp));
     % adjust weights using sim data values
     for r = 1:n_var
     Trans_mat_temp(r,:) = Trans_mat_temp(r,:).*reshape(in_sample_traj(:,tt:tt+1),n_var*2,1)';
     end
     % write adjusted edge weights
-    for e = 1:size(edge_list,2)-1
+    for e = 1:length(edge_indices)
         if tt==1
-            if j>n_var
+            if edge_indices{e}(2)>n_var
                 edge_list_all_T_semantic{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2)-n_var)];
             else
                 edge_list_all_T_semantic{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2))];
