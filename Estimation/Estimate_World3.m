@@ -1201,12 +1201,16 @@ for v = 1:n_var
     sim_results = eq_fun{h}(param_means,[sim_traj(:,tt)+delta;infq_],shift_times-tt-h+1,zeros(n_shocks*h,1));
 %     sim_results_1 = eq_fun{h}(param_means,[sim_traj(:,tt)+delta;infq_],shift_times-tt-h+1,zeros(n_shocks*h,1));
 %     sim_results = eq_fun{h+1}(param_means,[sim_results_1;infq_],shift_times-tt-h+2,zeros(n_shocks*(h+1),1));
-    Trans_mat_raw(v,:) = full(evalf(abs(baseline_results-sim_results)));
+if max(full(evalf(abs(baseline_results-sim_results)))) == 0
+   Trans_mat_raw(v,:) = full(evalf(abs(baseline_results-sim_results)));
+else
+    Trans_mat_raw(v,:) = full(evalf(abs(baseline_results-sim_results)))/max(abs(full(evalf(abs(baseline_results-sim_results)))));
+end
+    
 %     if(sum(full(evalf(abs(baseline_results-sim_results))))==0)
 %        disp(var_names{v}) 
 %     end
 end
-Trans_mat = max(max(Trans_mat_raw))*Trans_mat_raw;
 
 % write edge weights using transition matrix
 edge_list{1}=["Edge Weight","Target","Source"];
@@ -1231,8 +1235,26 @@ writetable(Table,'fixed_edges_World3.csv','WriteRowNames',false,'WriteVariableNa
 edge_list_all_T=cell(length(edge_indices),1);
 edge_list_all_T{1}=["Target","Source",dates{1:T}];
 for tt = 1:T
-    world3_jac_eval_temp = world3_jac_eq(init_param_guess, reshape(in_sample_traj(:,tt:tt+1),n_var*2,1), init_var_vals, shift_times-tt+1, zeros(n_shocks*t,1));
-    Trans_mat_temp = full(evalf(world3_jac_eval_temp));
+    % get Transition matrix for time t
+    %     world3_jac_eval_temp = world3_jac_eq(init_param_guess, reshape(in_sample_traj(:,tt:tt+1),n_var*2,1), init_var_vals, shift_times-tt+1, zeros(n_shocks*t,1));
+    %     Trans_mat_temp = full(evalf(world3_jac_eval_temp));
+    infq_ = [infq_data_CAN(est_start+tt-1);infq_data_CAN(est_start+tt-2);infq_data_CAN(est_start+tt-3);infq_data_CAN(est_start+tt-4);infq_data_world(est_start+tt-1);infq_data_world(est_start+tt-2);infq_data_world(est_start+tt-3);infq_data_world(est_start+tt-4)];
+    baseline_results = eq_fun{h}(param_means,[sim_traj(:,tt);infq_],shift_times-tt-h+1,zeros(n_shocks*h,1));
+    for v = 1:n_var
+        delta = zeros(n_var,1); 
+        if sim_traj(v,tt)==0
+            delta(v)=10^-6;
+        else
+            delta(v)=sim_traj(v,tt)/10^6;
+        end
+        sim_results = eq_fun{h}(param_means,[sim_traj(:,tt)+delta;infq_],shift_times-tt-h+1,zeros(n_shocks*h,1));
+        if max(full(evalf(abs(baseline_results-sim_results)))) == 0
+           Trans_mat_temp(v,:) = full(evalf(abs(baseline_results-sim_results)));
+        else
+            Trans_mat_temp(v,:) = full(evalf(abs(baseline_results-sim_results)))/max(abs(full(evalf(abs(baseline_results-sim_results)))));
+        end
+    end
+    % add to edge list
     for e = 1:length(edge_indices)
         if tt==1
             if edge_indices{e}(2)>n_var
@@ -1247,31 +1269,31 @@ end
 Table = array2table(vertcat(edge_list_all_T{:}));
 writetable(Table,'timeline_edges_World3.csv','WriteRowNames',false,'WriteVariableNames',false)
 
-% use evaluated jacobian and data as transition matrix
-edge_list_all_T_semantic=cell(length(edge_indices),1);
-edge_list_all_T_semantic{1}=["Target","Source",dates{1:T}];
-for tt = 1:T
-    % get sim data
-    world3_jac_eval_temp = world3_jac_eq(init_param_guess, reshape(in_sample_traj(:,tt:tt+1),n_var*2,1), init_var_vals, shift_times-tt+1, zeros(n_shocks*t,1));
-    Trans_mat_temp = full(evalf(world3_jac_eval_temp));
-    % adjust weights using sim data values
-    for r = 1:n_var
-    Trans_mat_temp(r,:) = Trans_mat_temp(r,:).*reshape(in_sample_traj(:,tt:tt+1),n_var*2,1)';
-    end
-    % write adjusted edge weights
-    for e = 1:length(edge_indices)
-        if tt==1
-            if edge_indices{e}(2)>n_var
-                edge_list_all_T_semantic{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2)-n_var)];
-            else
-                edge_list_all_T_semantic{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2))];
-            end
-        end
-        edge_list_all_T_semantic{e+1}=[edge_list_all_T_semantic{e+1}, -Trans_mat_temp(edge_indices{e}(1),edge_indices{e}(2))];
-    end
-end
-Table = array2table(vertcat(edge_list_all_T_semantic{:}));
-writetable(Table,'semantic_timeline_edges_World3.csv','WriteRowNames',false,'WriteVariableNames',false)
+% % use evaluated jacobian and data as transition matrix
+% edge_list_all_T_semantic=cell(length(edge_indices),1);
+% edge_list_all_T_semantic{1}=["Target","Source",dates{1:T}];
+% for tt = 1:T
+%     % get sim data
+%     world3_jac_eval_temp = world3_jac_eq(init_param_guess, reshape(in_sample_traj(:,tt:tt+1),n_var*2,1), init_var_vals, shift_times-tt+1, zeros(n_shocks*t,1));
+%     Trans_mat_temp = full(evalf(world3_jac_eval_temp));
+%     % adjust weights using sim data values
+%     for r = 1:n_var
+%     Trans_mat_temp(r,:) = Trans_mat_temp(r,:).*reshape(in_sample_traj(:,tt:tt+1),n_var*2,1)';
+%     end
+%     % write adjusted edge weights
+%     for e = 1:length(edge_indices)
+%         if tt==1
+%             if edge_indices{e}(2)>n_var
+%                 edge_list_all_T_semantic{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2)-n_var)];
+%             else
+%                 edge_list_all_T_semantic{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2))];
+%             end
+%         end
+%         edge_list_all_T_semantic{e+1}=[edge_list_all_T_semantic{e+1}, -Trans_mat_temp(edge_indices{e}(1),edge_indices{e}(2))];
+%     end
+% end
+% Table = array2table(vertcat(edge_list_all_T_semantic{:}));
+% writetable(Table,'semantic_timeline_edges_World3.csv','WriteRowNames',false,'WriteVariableNames',false)
 
 % get node values for time horizon
 timeline{1}=["name",dates{1:T}];
