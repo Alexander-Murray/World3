@@ -1186,7 +1186,7 @@ eq_vars=SX.sym('eqns',[2*n_var, 1]);
 
 % new new approach: use small deviations of prev vals to test sensitivity to obtain transition matrix values
 tt=2;h=2;
-Trans_mat_raw = zeros(n_var,n_var);
+Trans_mat = zeros(n_var,n_var);
 infq_ = [infq_data_CAN(est_start+tt-1);infq_data_CAN(est_start+tt-2);infq_data_CAN(est_start+tt-3);infq_data_CAN(est_start+tt-4);infq_data_world(est_start+tt-1);infq_data_world(est_start+tt-2);infq_data_world(est_start+tt-3);infq_data_world(est_start+tt-4)];
 baseline_results = eq_fun{h}(param_means,[sim_traj(:,tt);infq_],shift_times-tt-h+1,zeros(n_shocks*h,1));
 % baseline_results_1 = eq_fun{h}(param_means,[sim_traj(:,tt);infq_],shift_times-tt-h+1,zeros(n_shocks*h,1));
@@ -1202,9 +1202,9 @@ for v = 1:n_var
 %     sim_results_1 = eq_fun{h}(param_means,[sim_traj(:,tt)+delta;infq_],shift_times-tt-h+1,zeros(n_shocks*h,1));
 %     sim_results = eq_fun{h+1}(param_means,[sim_results_1;infq_],shift_times-tt-h+2,zeros(n_shocks*(h+1),1));
 if max(full(evalf(abs(baseline_results-sim_results)))) == 0
-   Trans_mat_raw(v,:) = full(evalf(abs(baseline_results-sim_results)));
+   Trans_mat(v,:) = full(evalf(abs(baseline_results-sim_results)));
 else
-    Trans_mat_raw(v,:) = full(evalf(abs(baseline_results-sim_results)))/max(abs(full(evalf(abs(baseline_results-sim_results)))));
+    Trans_mat(v,:) = full(evalf(abs(baseline_results-sim_results)))/max(abs(full(evalf(abs(baseline_results-sim_results)))));
 end
     
 %     if(sum(full(evalf(abs(baseline_results-sim_results))))==0)
