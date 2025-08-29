@@ -1213,15 +1213,15 @@ end
 end
 
 % write edge weights using transition matrix
-edge_list{1}=["Edge Weight","Target","Source"];
+edge_list{1}=["Edge Weight","Source","Target"];
 counter = 2;
 for i = 1:size(Trans_mat,1)
     for j = 1:size(Trans_mat,2)
         if Trans_mat(i,j)~=0 && i~=j && i+n_var~=j
             if j>n_var
-                edge_list{counter}=[-Trans_mat(i,j),var_names(i),var_names(j-n_var)];
+                edge_list{counter}=[Trans_mat(i,j),var_names(i),var_names(j-n_var)];
             else
-                edge_list{counter}=[-Trans_mat(i,j),var_names(i),var_names(j)];
+                edge_list{counter}=[Trans_mat(i,j),var_names(i),var_names(j)];
             end
             edge_indices{counter-1}=[i,j];
            counter = counter + 1;
@@ -1233,7 +1233,7 @@ writetable(Table,'fixed_edges_World3.csv','WriteRowNames',false,'WriteVariableNa
 
 % get edge values for time horizon
 edge_list_all_T=cell(length(edge_indices),1);
-edge_list_all_T{1}=["Target","Source",dates{1:T}];
+edge_list_all_T{1}=["Source","Target",dates{1:T}];
 for tt = 1:T
     % get Transition matrix for time t
     %     world3_jac_eval_temp = world3_jac_eq(init_param_guess, reshape(in_sample_traj(:,tt:tt+1),n_var*2,1), init_var_vals, shift_times-tt+1, zeros(n_shocks*t,1));
@@ -1263,7 +1263,7 @@ for tt = 1:T
                 edge_list_all_T{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2))];
             end
         end
-        edge_list_all_T{e+1}=[edge_list_all_T{e+1}, -Trans_mat_temp(edge_indices{e}(1),edge_indices{e}(2))];
+        edge_list_all_T{e+1}=[edge_list_all_T{e+1}, Trans_mat_temp(edge_indices{e}(1),edge_indices{e}(2))];
     end
 end
 Table = array2table(vertcat(edge_list_all_T{:}));
