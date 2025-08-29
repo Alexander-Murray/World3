@@ -1202,9 +1202,9 @@ for v = 1:n_var
 %     sim_results_1 = eq_fun{h}(param_means,[sim_traj(:,tt)+delta;infq_],shift_times-tt-h+1,zeros(n_shocks*h,1));
 %     sim_results = eq_fun{h+1}(param_means,[sim_results_1;infq_],shift_times-tt-h+2,zeros(n_shocks*(h+1),1));
 if max(full(evalf(abs(baseline_results-sim_results)))) == 0
-   Trans_mat(v,:) = full(evalf(abs(baseline_results-sim_results)));
+   Trans_mat(v,:) = full(evalf(baseline_results-sim_results));
 else
-    Trans_mat(v,:) = full(evalf(abs(baseline_results-sim_results)))/max(abs(full(evalf(abs(baseline_results-sim_results)))));
+    Trans_mat(v,:) = full(evalf(baseline_results-sim_results))/max(abs(full(evalf(abs(baseline_results-sim_results)))));
 end
     
 %     if(sum(full(evalf(abs(baseline_results-sim_results))))==0)
@@ -1219,9 +1219,9 @@ for i = 1:size(Trans_mat,1)
     for j = 1:size(Trans_mat,2)
         if Trans_mat(i,j)~=0 && i~=j && i+n_var~=j
             if j>n_var
-                edge_list{counter}=[Trans_mat(i,j),var_names(i),var_names(j-n_var)];
+                edge_list{counter}=[-Trans_mat(i,j),var_names(i),var_names(j-n_var)];
             else
-                edge_list{counter}=[Trans_mat(i,j),var_names(i),var_names(j)];
+                edge_list{counter}=[-Trans_mat(i,j),var_names(i),var_names(j)];
             end
             edge_indices{counter-1}=[i,j];
            counter = counter + 1;
@@ -1249,9 +1249,9 @@ for tt = 1:T
         end
         sim_results = eq_fun{h}(param_means,[sim_traj(:,tt)+delta;infq_],shift_times-tt-h+1,zeros(n_shocks*h,1));
         if max(full(evalf(abs(baseline_results-sim_results)))) == 0
-           Trans_mat_temp(v,:) = full(evalf(abs(baseline_results-sim_results)));
+           Trans_mat_temp(v,:) = full(evalf(baseline_results-sim_results));
         else
-            Trans_mat_temp(v,:) = full(evalf(abs(baseline_results-sim_results)))/max(abs(full(evalf(abs(baseline_results-sim_results)))));
+            Trans_mat_temp(v,:) = full(evalf(baseline_results-sim_results))/max(abs(full(evalf(abs(baseline_results-sim_results)))));
         end
     end
     % add to edge list
@@ -1263,7 +1263,7 @@ for tt = 1:T
                 edge_list_all_T{e+1}=[var_names(edge_indices{e}(1)),var_names(edge_indices{e}(2))];
             end
         end
-        edge_list_all_T{e+1}=[edge_list_all_T{e+1}, Trans_mat_temp(edge_indices{e}(1),edge_indices{e}(2))];
+        edge_list_all_T{e+1}=[edge_list_all_T{e+1}, -Trans_mat_temp(edge_indices{e}(1),edge_indices{e}(2))];
     end
 end
 Table = array2table(vertcat(edge_list_all_T{:}));
